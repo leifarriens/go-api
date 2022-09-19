@@ -59,6 +59,27 @@ func (bc *BookController) GetAllBooks(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, users)
 }
 
+func (bc *BookController) UpdateBook(ctx *gin.Context) {
+	bookid, err := primitive.ObjectIDFromHex(ctx.Param(("bookId")))
+
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	var book models.Book
+	if err := ctx.ShouldBindJSON(&book); err != nil {
+		ctx.JSON(http.StatusBadGateway, gin.H{"message": err.Error()})
+	}
+
+	err = bc.BookService.UpdateBook(&bookid, &book)
+	if err != nil {
+		ctx.JSON(http.StatusBadGateway, gin.H{"message": err.Error()})
+		return
+	}
+	ctx.JSON(http.StatusOK, gin.H{"message": "success"})
+}
+
 func (bc *BookController) DeleteBook(ctx *gin.Context) {
 	bookid, err := primitive.ObjectIDFromHex(ctx.Param(("bookId")))
 
@@ -81,5 +102,6 @@ func (bc *BookController) RegisterBookRoutes(rg *gin.RouterGroup) {
 	bookroute.POST("/", bc.CreateBook)
 	bookroute.GET("/:bookId", bc.GetBook)
 	bookroute.GET("/", bc.GetAllBooks)
-	bookroute.DELETE("/:userId", bc.DeleteBook)
+	bookroute.PATCH("/:bookId", bc.UpdateBook)
+	bookroute.DELETE("/:bookId", bc.DeleteBook)
 }

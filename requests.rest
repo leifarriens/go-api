@@ -3,7 +3,7 @@ GET http://localhost:8080/books HTTP/1.1
 content-type: application/json
 
 ###
-GET http://localhost:8080/books/63287fc79aa2918a31cb25f6 HTTP/1.1
+GET http://localhost:8080/books/6328e641e21e9677dd6f25b8 HTTP/1.1
 content-type: application/json
 
 ###
@@ -11,9 +11,19 @@ POST http://localhost:8080/books HTTP/1.1
 content-type: application/json
 
 {
-  "name": "Test book"
+  "name": "Herr der Diebe",
+  "author": "Cornelia Funke"
 }
 
 ###
-DELETE http://localhost:8080/books/632891261da2b87280b13df0 HTTP/1.1
+PATCH http://localhost:8080/books/63288acc0c7dfc4a31d74579 HTTP/1.1
+content-type: application/json
+
+{
+  "name": "Harry Potter",
+  "author": "Joanne Katherine Rowland"
+}
+
+###
+DELETE http://localhost:8080/books/6328ddad3f31fbac89efa3e3 HTTP/1.1
 content-type: application/json

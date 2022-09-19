@@ -27,15 +27,15 @@ func (b *BookServiceImpl) CreateBook(book *models.Book) error {
 	return err
 }
 
-func (b *BookServiceImpl) GetBook(id *primitive.ObjectID) (*models.Book, error) {
-	var book *models.Book
+func (b *BookServiceImpl) GetBook(id *primitive.ObjectID) (*models.BookWithId, error) {
+	var book *models.BookWithId
 	filter := bson.D{{"_id", id}}
 	err := b.bookcollection.FindOne(b.ctx, filter).Decode(&book)
 	return book, err
 }
 
-func (b *BookServiceImpl) GetAllBooks() ([]*models.Book, error) {
-	var books []*models.Book
+func (b *BookServiceImpl) GetAllBooks() ([]*models.BookWithId, error) {
+	var books []*models.BookWithId
 	cursor, err := b.bookcollection.Find(b.ctx, bson.M{})
 
 	if err != nil {
@@ -49,6 +49,16 @@ func (b *BookServiceImpl) GetAllBooks() ([]*models.Book, error) {
 	cursor.Close(b.ctx)
 
 	return books, nil
+}
+
+func (b *BookServiceImpl) UpdateBook(id *primitive.ObjectID, book *models.Book) error {
+	filter := bson.D{{"_id", id}}
+	update := bson.D{primitive.E{Key: "$set", Value: bson.D{primitive.E{Key: "name", Value: book.Name}, primitive.E{Key: "author", Value: book.Author}}}}
+	result, _ := b.bookcollection.UpdateOne(b.ctx, filter, update)
+	if result.MatchedCount != 1 {
+		return errors.New("no matched document found for update")
+	}
+	return nil
 }
 
 func (b *BookServiceImpl) DeleteBook(id *primitive.ObjectID) error {

@@ -8,7 +8,8 @@ import (
 
 type BookService interface {
 	CreateBook(*models.Book) error
-	GetBook(*primitive.ObjectID) (*models.Book, error)
-	GetAllBooks() ([]*models.Book, error)
+	GetBook(*primitive.ObjectID) (*models.BookWithId, error)
+	GetAllBooks() ([]*models.BookWithId, error)
+	UpdateBook(*primitive.ObjectID, *models.Book) error
 	DeleteBook(*primitive.ObjectID) error
 }
