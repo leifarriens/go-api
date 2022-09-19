@@ -2,7 +2,7 @@
   "name": "go-api",
   "version": "0.0.0",
   "scripts": {
-    "dev": "nodemon --watch *.go --exec go run main.go"
+    "dev": "docker compose up -d && nodemon --watch *.go --exec go run main.go"
   },
   "devDependencies": {
     "nodemon": "^2.0.20"

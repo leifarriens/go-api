@@ -15,10 +15,10 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-// type book struct {
-// 	ID   string
-// 	Name string
-// }
+type Book struct {
+	ID   string
+	Name string
+}
 
 func main() {
 	if err := godotenv.Load(); err != nil {
@@ -87,10 +87,16 @@ func main() {
 	})
 
 	r.POST("/books", func(c *gin.Context) {
-		name := c.PostForm("name")
+		var newBook Book
+
+		err := c.BindJSON(&newBook)
+
+		if err != nil {
+			panic(err)
+		}
 
 		coll := client.Database(database).Collection("books")
-		doc := bson.D{{"name", name}}
+		doc := bson.D{{"name", newBook.Name}}
 
 		result, err := coll.InsertOne(context.TODO(), doc)
 
@@ -102,5 +108,26 @@ func main() {
 			"data": result,
 		})
 	})
+
+	r.DELETE("/books/:bookId", func(c *gin.Context) {
+		coll := client.Database(database).Collection("books")
+
+		objectId, err := primitive.ObjectIDFromHex(c.Param(("bookId")))
+
+		if err != nil {
+			log.Println("Invalid id")
+		}
+
+		result, err := coll.DeleteOne(context.TODO(), bson.D{{"_id", objectId}})
+
+		if err != nil {
+			panic(err)
+		}
+
+		c.JSON(http.StatusOK, gin.H{
+			"data": result,
+		})
+	})
+
 	r.Run("localhost:8080")
 }

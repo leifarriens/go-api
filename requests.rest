@@ -1,0 +1,19 @@
+###
+GET http://localhost:8080/books HTTP/1.1
+content-type: application/json
+
+###
+GET http://localhost:8080/books/63287fc79aa2918a31cb25f6 HTTP/1.1
+content-type: application/json
+
+###
+POST http://localhost:8080/books HTTP/1.1
+content-type: application/json
+
+{
+  "name": "Test book"
+}
+
+###
+DELETE http://localhost:8080/books/632891261da2b87280b13df0 HTTP/1.1
+content-type: application/json
