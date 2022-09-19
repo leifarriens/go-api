@@ -3,24 +3,29 @@ package main
 import (
 	"context"
 	"fmt"
+	"goapi/controllers"
+	"goapi/services"
 	"log"
-	"net/http"
 	"os"
 
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/mongo/readpref"
 )
 
-type Book struct {
-	ID   string
-	Name string
-}
+var (
+	server         *gin.Engine
+	bookservice    services.BookService
+	bookcontroller controllers.BookController
+	ctx            gin.Context
+	bookcollection *mongo.Collection
+	mongoclient    *mongo.Client
+	err            error
+)
 
-func main() {
+func init() {
 	if err := godotenv.Load(); err != nil {
 		log.Println("No .env file found")
 	}
@@ -32,102 +37,30 @@ func main() {
 		log.Fatal("You must set your 'MONGODB_URI' environmental variable. See\n\t https://www.mongodb.com/docs/drivers/go/current/usage-examples/#environment-variable")
 	}
 
-	client, err := mongo.Connect(context.TODO(), options.Client().ApplyURI(uri))
+	mongoclient, err = mongo.Connect(context.TODO(), options.Client().ApplyURI(uri))
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
-	defer func() {
-		if err = client.Disconnect(context.TODO()); err != nil {
-			panic(err)
-		}
-	}()
 
-	fmt.Println("Successfully connected and pinged.")
+	err = mongoclient.Ping(context.TODO(), readpref.Primary())
+	if err != nil {
+		log.Fatal(err)
+	}
 
-	r := gin.Default()
+	fmt.Println("connected to mongodb")
 
-	r.GET("/books", func(c *gin.Context) {
-		coll := client.Database(database).Collection("books")
+	bookcollection = mongoclient.Database(database).Collection(("books"))
+	bookservice = services.NewBookService(bookcollection, context.TODO())
+	bookcontroller = controllers.New(bookservice)
+	server = gin.Default()
+	server.SetTrustedProxies([]string{"localhost"})
+}
 
-		cursor, err := coll.Find(context.TODO(), bson.M{})
+func main() {
+	defer mongoclient.Disconnect(context.TODO())
 
-		if err != nil {
-			panic(err)
-		}
+	basepath := server.Group("/")
+	bookcontroller.RegisterBookRoutes(basepath)
 
-		var results []bson.M
-		if err = cursor.All(context.TODO(), &results); err != nil {
-			panic(err)
-		}
-
-		c.JSON(http.StatusOK, gin.H{
-			"data": results,
-		})
-	})
-
-	r.GET("/books/:bookId", func(c *gin.Context) {
-		coll := client.Database(database).Collection("books")
-
-		objectId, err := primitive.ObjectIDFromHex(c.Param(("bookId")))
-
-		if err != nil {
-			log.Println("Invalid id")
-		}
-
-		var result bson.M
-		err = coll.FindOne(context.TODO(), bson.D{{"_id", objectId}}).Decode(&result)
-
-		if err != nil {
-			panic(err)
-		}
-
-		c.JSON(http.StatusOK, gin.H{
-			"data": result,
-		})
-	})
-
-	r.POST("/books", func(c *gin.Context) {
-		var newBook Book
-
-		err := c.BindJSON(&newBook)
-
-		if err != nil {
-			panic(err)
-		}
-
-		coll := client.Database(database).Collection("books")
-		doc := bson.D{{"name", newBook.Name}}
-
-		result, err := coll.InsertOne(context.TODO(), doc)
-
-		if err != nil {
-			panic(err)
-		}
-
-		c.JSON(http.StatusOK, gin.H{
-			"data": result,
-		})
-	})
-
-	r.DELETE("/books/:bookId", func(c *gin.Context) {
-		coll := client.Database(database).Collection("books")
-
-		objectId, err := primitive.ObjectIDFromHex(c.Param(("bookId")))
-
-		if err != nil {
-			log.Println("Invalid id")
-		}
-
-		result, err := coll.DeleteOne(context.TODO(), bson.D{{"_id", objectId}})
-
-		if err != nil {
-			panic(err)
-		}
-
-		c.JSON(http.StatusOK, gin.H{
-			"data": result,
-		})
-	})
-
-	r.Run("localhost:8080")
+	log.Fatal(server.Run("localhost:8080"))
 }
